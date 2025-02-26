@@ -25,8 +25,8 @@ Details of each folder are as follows:
 | Stage1 |  Stage1 model [(config)](./egs/stage1.yaml) |
 | Stage2 |  Stage2 model [(config)](./egs/stage2.yaml) |
 | HIFI-GAN    |  Neural Vocoder                        |
-**We will provide pretrain models in the near future.**
 
+**We will provide pretrain models in the near future.**
 
 ### Dependencies
 
