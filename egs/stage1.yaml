@@ -1,0 +1,112 @@
+base_config: egs/egs_bases/tts/fs.yaml
+task_cls: tasks.TechSinger.techsinger.RFSingerTask
+binary_data_dir: 'data/binary/tech'
+processed_data_dir: 'data/processed/tech'
+binarizer_cls: data_gen.tech_binarizer.TechBinarizer
+
+valid_prefixes: [
+]
+test_prefixes: [
+]
+test_ids: []
+# training
+ds_workers: 4
+max_tokens: 36000
+max_sentences: 16
+max_input_tokens: 1550
+num_sanity_val_steps: 0 # steps of validation at the beginning
+val_check_interval: 10000
+valid_infer_interval: 10000
+max_updates: 200000
+
+# audio params
+audio_sample_rate: 48000
+hop_size: 256
+win_size: 1024
+fft_size: 1024
+fmax: 24000
+fmin: 20
+max_frames: 3000
+f0_max: 1000
+f0_min: 50
+
+# speaker params
+num_spk: 160
+use_spk_id: true
+use_spk_embed: false
+use_spk_prompt: false
+
+# f0 pred
+use_pitch_embed: true
+f0_gen: 'flow'
+flow_qsample: 'direct' # sig, direct
+f0_sample_clip: true
+gaussian_start: True
+f0_dilation_cycle_length: 4  # *
+f0_max_beta: 0.06
+f0_residual_layers: 10
+f0_residual_channels: 192
+weight_decay: 0
+keep_bins: 80
+f0_timesteps: 1000
+f0_K_step: 100
+f0_infer_with_ref: false
+dur_loss: mse
+
+# mel pred
+decay_steps: 50000
+dilation_cycle_length: 4  # *
+predictor_layers: 5
+flow_loss_type: l1
+flow_decoder_type: 'wavenet'
+schedule_type: 'linear'
+residual_layers: 20
+residual_channels: 256
+optimizer_adam_beta1: 0.9
+optimizer_adam_beta2: 0.98
+timesteps: 1000
+K_step: 100
+max_beta: 0.06
+drop_tech_prob: 0.1
+
+# Dur level
+dur_level: ph
+
+# Text encoder type 
+encoder_type: rel_fft
+
+# VQ-VAE related
+hidden_size: 256
+ffn_hidden_size: 1024
+
+# new features
+lambda_ph_dur: 1.0
+lambda_sent_dur: 0.0
+lambda_word_dur: 0.0
+predictor_grad: 1.0
+predictor_dropout: 0.0
+use_ph_postnet: true
+
+binarization_args:
+  reset_phone_dict: true
+  reset_word_dict: true
+  shuffle: false
+  trim_eos_bos: false
+  trim_sil: false
+  with_align: true
+  with_f0: true
+  with_f0cwt: false
+  with_linear: false
+  with_spk_embed: false
+  with_spk_id: true
+  with_txt: true
+  with_wav: true
+  with_word: true
+
+# vocoder
+vocoder: HifiGAN_NSF
+vocoder_ckpt: checkpoints/hifigan
+use_nsf: true
+
+spec_min: [-6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -6.0]
+spec_max: [0.03640973940491676, 0.039425432682037354, 0.29524752497673035, 0.45784831047058105, 0.48333120346069336, 0.5335848927497864, 0.6071611046791077, 0.5474293828010559, 0.6076506972312927, 0.5390501022338867, 0.5743886232376099, 0.485751211643219, 0.4248744249343872, 0.4843744933605194, 0.43331536650657654, 0.5356124639511108, 0.4875929355621338, 0.48614853620529175, 0.44228559732437134, 0.5027499198913574, 0.6554337739944458, 0.3469322919845581, 0.33981558680534363, 0.37933868169784546, 0.34751009941101074, 0.22094282507896423, 0.252963662147522, 0.18274202942848206, 0.1976650059223175, 0.1770155429840088, 0.18206502497196198, 0.1002601608633995, 0.18640224635601044, 0.27240633964538574, 0.04153885692358017, -0.010289354249835014, -0.012929759919643402, 0.035185474902391434, 0.18124309182167053, -0.14512233436107635, -0.1778590828180313, -0.20491982996463776, -0.30119436979293823, -0.1735714226961136, -0.1039585992693901, -0.177497997879982, -0.28803232312202454, -0.24049188196659088, -0.4682924747467041, -0.5791841745376587, -0.5170156955718994, -0.6380605697631836, -0.7147259712219238, -0.6607836484909058, -0.7288452982902527, -0.6338580250740051, -0.7092624306678772, -0.8101216554641724, -0.7633087038993835, -0.8251329660415649, -0.6936700940132141, -0.5180960297584534, -0.7972619533538818, -0.807314932346344, -0.7151175737380981, -0.7785399556159973, -0.8709449768066406, -0.8360402584075928, -0.8253681659698486, -0.9778416156768799, -1.12929368019104, -1.3274869918823242, -1.3071579933166504, -1.5234452486038208, -1.6191706657409668, -1.708594799041748, -1.8246771097183228, -1.9193823337554932, -2.1361801624298096, -2.3829283714294434]
