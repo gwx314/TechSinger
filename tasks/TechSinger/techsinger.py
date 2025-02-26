@@ -75,18 +75,11 @@ class RFSingerTask(AuxDecoderMIDITask):
         f0 = sample['f0']
         uv = sample['uv']
         nonpadding = (mel2ph != 0).float()
-        if hparams["f0_gen"] == "diff":
-            losses["fdiff"] = output["fdiff"]
-            losses['uv'] = (F.binary_cross_entropy_with_logits(
-                output["uv_pred"][:, :, 0], uv, reduction='none') * nonpadding).sum() / nonpadding.sum() * hparams['lambda_uv']
-        elif hparams["f0_gen"] == "flow":
+        if hparams["f0_gen"] == "flow":
             losses["pflow"] = output["pflow"]
             losses['uv'] = (F.binary_cross_entropy_with_logits(
                 output["uv_pred"][:, :, 0], uv, reduction='none') * nonpadding).sum() / nonpadding.sum() * hparams['lambda_uv']
-        elif hparams["f0_gen"] == "gmdiff":
-            losses["gdiff"] = output["gdiff"]
-            losses["mdiff"] = output["mdiff"]
-        elif hparams["f0_gen"] == "orig":
+        else:
             losses["fdiff"] = output["fdiff"]
             losses['uv'] = (F.binary_cross_entropy_with_logits(
                 output["uv_pred"][:, :, 0], uv, reduction='none') * nonpadding).sum() / nonpadding.sum() * hparams['lambda_uv']

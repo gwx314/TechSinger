@@ -6,11 +6,8 @@ from modules.tts.commons.align_ops import clip_mel2token_to_multiple, expand_sta
 from utils.audio.pitch.utils import denorm_f0, f0_to_coarse
 import torch
 import torch.nn.functional as F
-from modules.TechSinger.diff.gaussian_multinomial_diffusion import GaussianMultinomialDiffusion, GaussianMultinomialDiffusionx0
-from modules.TechSinger.diff.net import DiffNet, F0DiffNet, DDiffNet
-
 from utils.commons.hparams import hparams
-from modules.TechSinger.diff.diff_f0 import GaussianDiffusionF0, GaussianDiffusionx0
+from modules.TechSinger.diff.net import DiffNet, F0DiffNet
 from modules.TechSinger.flow.flow_f0 import ReflowF0
 from modules.commons.nar_tts_modules import PitchPredictor
 from modules.commons.layers import Embedding
@@ -88,30 +85,14 @@ class RFSinger(FastSpeech):
         super().__init__(dict_size, hparams, out_dims)
         self.note_encoder = NoteEncoder(n_vocab=100, hidden_channels=self.hidden_size)
         self.tech_encoder = TechEncoder(hidden_channels=self.hidden_size)
-        if hparams["f0_gen"] == "diff":
-            self.uv_predictor = PitchPredictor(
-                self.hidden_size, n_chans=128,
-                n_layers=5, dropout_rate=0.1, odim=2,
-                kernel_size=hparams['predictor_kernel'])
-            self.pitch_flow_diffnet = F0DiffNet(in_dims=1)
-            if hparams["param_"] == "x0":
-                self.f0_gen = GaussianDiffusionx0(out_dims=1, denoise_fn=self.pitch_flow_diffnet, timesteps=hparams["f0_timesteps"], f0_K_step=hparams["f0_K_step"])
-            else:
-                self.f0_gen = GaussianDiffusionF0(out_dims=1, denoise_fn=self.pitch_flow_diffnet, timesteps=hparams["f0_timesteps"], f0_K_step=hparams["f0_K_step"])
-        elif hparams["f0_gen"] == "gmdiff":
-            self.gm_diffnet = DDiffNet(in_dims=1, num_classes=2)
-            if hparams["param_"] == "x0":
-                self.f0_gen = GaussianMultinomialDiffusionx0(num_classes=2, denoise_fn=self.gm_diffnet, num_timesteps=hparams["f0_timesteps"], f0_K_step=hparams["f0_K_step"])
-            else:
-                self.f0_gen = GaussianMultinomialDiffusion(num_classes=2, denoise_fn=self.gm_diffnet, num_timesteps=hparams["f0_timesteps"], f0_K_step=hparams["f0_K_step"])
-        elif hparams["f0_gen"] == "flow":
+        if hparams["f0_gen"] == "flow":
             self.uv_predictor = PitchPredictor(
                 self.hidden_size, n_chans=128,
                 n_layers=5, dropout_rate=0.1, odim=2,
                 kernel_size=hparams['predictor_kernel'])
             self.pitch_flownet = F0DiffNet(in_dims=1)
             self.f0_gen = ReflowF0(out_dims=1, denoise_fn=self.pitch_flownet, timesteps=hparams["f0_timesteps"], f0_K_step=hparams["f0_K_step"])
-        elif hparams["f0_gen"] == "orig":
+        else:
             self.uv_predictor = PitchPredictor(
                 self.hidden_size, n_chans=128,
                 n_layers=5, dropout_rate=0.1, odim=2,
@@ -159,13 +140,9 @@ class RFSinger(FastSpeech):
         if self.hparams['predictor_grad'] != 1:
             pitch_pred_inp = pitch_pred_inp.detach() + \
                              self.hparams['predictor_grad'] * (pitch_pred_inp - pitch_pred_inp.detach())
-        if hparams["f0_gen"] == "diff":
-            f0, uv = self.add_diff_pitch(pitch_pred_inp, f0, uv, mel2ph, ret, **kwargs)
-        elif hparams["f0_gen"] == "gmdiff":
-            f0, uv = self.add_gmdiff_pitch(pitch_pred_inp, f0, uv, mel2ph, ret, **kwargs)
-        elif hparams["f0_gen"] == "flow":
+        if hparams["f0_gen"] == "flow":
             f0, uv = self.add_flow_pitch(pitch_pred_inp, f0, uv, mel2ph, ret, **kwargs)
-        elif hparams["f0_gen"] == "orig":
+        else:
             f0, uv = self.add_orig_pitch(pitch_pred_inp, f0, uv, mel2ph, ret, **kwargs)
         
         f0_denorm = denorm_f0(f0, uv, pitch_padding=pitch_padding)
@@ -216,55 +193,6 @@ class RFSinger(FastSpeech):
             ret["fdiff"] = (F.mse_loss(f0_pred, f0, reduction='none') * nonpadding).sum() \
                            / nonpadding.sum() * hparams['lambda_f0']
         return f0, uv
-    
-    def add_diff_pitch(self, decoder_inp, f0, uv, mel2ph, ret, encoder_out=None, **kwargs):
-        pitch_padding = mel2ph == 0
-        if f0 is None:
-            infer = True
-        else:
-            infer = False
-        ret["uv_pred"] = uv_pred = self.uv_predictor(decoder_inp)
-        def minmax_norm(x, uv=None):
-            x_min = 6
-            x_max = 10
-            if torch.any(x> x_max):
-                raise ValueError("check minmax_norm!!")
-            normed_x = (x - x_min) / (x_max - x_min) * 2 - 1
-            if uv is not None:
-                normed_x[uv > 0] = 0
-            return normed_x
-
-        def minmax_denorm(x, uv=None):
-            x_min = 6
-            x_max = 10
-            denormed_x = (x + 1) / 2 * (x_max - x_min) + x_min
-            if uv is not None:
-                denormed_x[uv > 0] = 0
-            return denormed_x
-        if infer:
-            uv = uv_pred[:, :, 0] > 0
-            midi_notes = kwargs.get("midi_notes").transpose(-1, -2)
-            uv[midi_notes[:, 0, :] == 0] = 1
-            uv = uv
-            lower_bound = midi_notes - 3
-            upper_bound = midi_notes + 3
-            upper_norm_f0 = minmax_norm((2 ** ((upper_bound-69)/12) * 440).log2())
-            lower_norm_f0 = minmax_norm((2 ** ((lower_bound-69)/12) * 440).log2())
-            upper_norm_f0[upper_norm_f0 < -1] = -1
-            upper_norm_f0[upper_norm_f0 > 1] = 1
-            lower_norm_f0[lower_norm_f0 < -1] = -1
-            lower_norm_f0[lower_norm_f0 > 1] = 1
-            f0 = self.f0_gen(decoder_inp.transpose(-1, -2), None, None, ret, infer, dyn_clip=[lower_norm_f0, upper_norm_f0]) # 
-            # f0 = self.f0_gen(decoder_inp.transpose(-1, -2), None, None, ret, infer)
-            f0 = f0[:, :, 0]
-            f0 = minmax_denorm(f0)
-            ret["fdiff"] = 0.0
-        else:
-            # nonpadding = (mel2ph > 0).float() * (uv == 0).float()
-            nonpadding = (mel2ph > 0).float()
-            norm_f0 = minmax_norm(f0)
-            ret["fdiff"] = self.f0_gen(decoder_inp.transpose(-1, -2), norm_f0, nonpadding.unsqueeze(dim=1), ret, infer)
-        return f0, uv
 
     def add_flow_pitch(self, decoder_inp, f0, uv, mel2ph, ret, encoder_out=None, **kwargs):
         pitch_padding = mel2ph == 0
@@ -311,53 +239,6 @@ class RFSinger(FastSpeech):
             nonpadding = (mel2ph > 0).float() * (uv == 0).float()
             norm_f0 = minmax_norm(f0)
             ret["pflow"] = self.f0_gen(decoder_inp.transpose(-1, -2), norm_f0, nonpadding.unsqueeze(dim=1), ret, infer)
-        return f0, uv
-    
-    def add_gmdiff_pitch(self, decoder_inp, f0, uv, mel2ph, ret, encoder_out=None, **kwargs):
-        pitch_padding = mel2ph == 0
-        if f0 is None:
-            infer = True
-        else:
-            infer = False
-        def minmax_norm(x, uv=None):
-            x_min = 6
-            x_max = 10
-            if torch.any(x> x_max):
-                raise ValueError("check minmax_norm!!")
-            normed_x = (x - x_min) / (x_max - x_min) * 2 - 1
-            if uv is not None:
-                normed_x[uv > 0] = 0
-            return normed_x
-
-        def minmax_denorm(x, uv=None):
-            x_min = 6
-            x_max = 10
-            denormed_x = (x + 1) / 2 * (x_max - x_min) + x_min
-            if uv is not None:
-                denormed_x[uv > 0] = 0
-            return denormed_x
-        if infer:
-            # uv = uv
-            midi_notes = kwargs.get("midi_notes").transpose(-1, -2)
-            lower_bound = midi_notes - 3 # 1 for good gtdur F0RMSE
-            upper_bound = midi_notes + 3 # 1 for good gtdur F0RMSE
-            upper_norm_f0 = minmax_norm((2 ** ((upper_bound-69)/12) * 440).log2())
-            lower_norm_f0 = minmax_norm((2 ** ((lower_bound-69)/12) * 440).log2())
-            upper_norm_f0[upper_norm_f0 < -1] = -1
-            upper_norm_f0[upper_norm_f0 > 1] = 1
-            lower_norm_f0[lower_norm_f0 < -1] = -1
-            lower_norm_f0[lower_norm_f0 > 1] = 1
-            pitch_pred = self.f0_gen(decoder_inp.transpose(-1, -2), None, None, None, ret, infer, dyn_clip=[lower_norm_f0, upper_norm_f0]) # [lower_norm_f0, upper_norm_f0]
-            f0 = pitch_pred[:, :, 0]
-            uv = pitch_pred[:, :, 1]
-            uv[midi_notes[:, 0, :] == 0] = 1
-            f0 = minmax_denorm(f0)
-            ret["gdiff"] = 0.0
-            ret["mdiff"] = 0.0
-        else:
-            nonpadding = (mel2ph > 0).float()
-            norm_f0 = minmax_norm(f0)
-            ret["mdiff"], ret["gdiff"], ret["nll"] = self.f0_gen(decoder_inp.transpose(-1, -2), norm_f0.unsqueeze(dim=1), uv, nonpadding, ret, infer)
         return f0, uv
     
     def forward_decoder(self, decoder_inp,tgt_nonpadding, ret, infer, **kwargs):
