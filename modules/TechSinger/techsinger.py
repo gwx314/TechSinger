@@ -1,4 +1,3 @@
-# midi singer
 import torch.nn as nn
 from modules.tts.fs import FastSpeech
 import math
@@ -18,6 +17,12 @@ Flow_DECODERS = {
 
 # process note_tokens, note_durs and note types
 class NoteEncoder(nn.Module):
+    """Encodes musical note features including tokens, durations, and types.
+    
+    Args:
+        n_vocab (int): Vocabulary size for note tokens
+        hidden_channels (int): Dimension of hidden representations
+    """
     def __init__(self, n_vocab, hidden_channels):
         super().__init__()
         self.hidden_channels = hidden_channels
@@ -28,6 +33,11 @@ class NoteEncoder(nn.Module):
         self.dur_ln = nn.Linear(1, hidden_channels)
 
     def forward(self, note_tokens, note_durs, note_types):
+        """Fuses note features through summation:
+        - Token embeddings
+        - Type embeddings 
+        - Duration projections
+        """
         x = self.emb(note_tokens) * math.sqrt(self.hidden_channels)
         types = self.type_emb(note_types) * math.sqrt(self.hidden_channels)
         durs = self.dur_ln(note_durs.unsqueeze(dim=-1))
@@ -35,6 +45,11 @@ class NoteEncoder(nn.Module):
         return x
     
 class TechEncoder(nn.Module):
+    """Encodes vocal technique parameters using embedding summation.
+    
+    Handles 9 vocal techniques:
+    - mix, falsetto, breathy, bubble, strong, weak, pharyngeal, vibrato, glissando
+    """
     def __init__(self, hidden_channels):
         super().__init__()
         self.hidden_channels = hidden_channels
@@ -79,7 +94,7 @@ class TechEncoder(nn.Module):
 
         return x
 
-
+# Stage1: F0 and coarse mel generation
 class RFSinger(FastSpeech):
     def __init__(self, dict_size, hparams, out_dims=None):
         super().__init__(dict_size, hparams, out_dims)
@@ -109,27 +124,30 @@ class RFSinger(FastSpeech):
         note_out = self.note_encoder(note, note_dur, note_type)
         encoder_out = encoder_out + note_out
         src_nonpadding = (txt_tokens > 0).float()[:, :, None]
-        ret['spk_embed'] = style_embed = self.forward_style_embed(None, spk_id)
-        tech=self.tech_encoder(mix,falsetto,breathy,bubble,strong,weak,pharyngeal,vibrato,glissando)
+        ret['spk_embed'] = spk_embed = self.forward_style_embed(None, spk_id)
+        
         # add dur
-        dur_inp = (encoder_out + style_embed) * src_nonpadding
+        dur_inp = (encoder_out + spk_embed) * src_nonpadding
         mel2ph = self.forward_dur(dur_inp, mel2ph, txt_tokens, ret)
         tgt_nonpadding = (mel2ph > 0).float()[:, :, None]
         decoder_inp = expand_states(encoder_out, mel2ph)
         in_nonpadding = (mel2ph > 0).float()[:, :, None]  
-
-        ret['tech'] = tech = expand_states(tech, mel2ph) * tgt_nonpadding
         ret['mel2ph'] = mel2ph
+
+        # Vocal technique encoding
+        tech=self.tech_encoder(mix,falsetto,breathy,bubble,strong,weak,pharyngeal,vibrato,glissando)
+        ret['tech'] = tech = expand_states(tech, mel2ph) * tgt_nonpadding
 
         # add pitch embed
         midi_notes = None
-        pitch_inp = (decoder_inp + style_embed + tech) * tgt_nonpadding
+        pitch_inp = (decoder_inp + spk_embed + tech) * tgt_nonpadding
         if infer:
             f0, uv = None, None
             midi_notes = expand_states(note[:, :, None], mel2ph)
         decoder_inp = decoder_inp + self.forward_pitch(pitch_inp, f0, uv, mel2ph, ret, encoder_out, midi_notes=midi_notes)
+
         # decoder input
-        ret['decoder_inp'] = decoder_inp = (decoder_inp + style_embed + tech) * tgt_nonpadding
+        ret['decoder_inp'] = decoder_inp = (decoder_inp + spk_embed + tech) * tgt_nonpadding
         ret['mel_out'] = self.forward_decoder(decoder_inp, tgt_nonpadding, ret, infer=infer)
 
         return ret
@@ -247,6 +265,7 @@ class RFSinger(FastSpeech):
         x = self.mel_out(x)
         return x * tgt_nonpadding
 
+# Stage2: fined mel generation
 class RFPostnet(nn.Module):
     def __init__(self):
         super().__init__()
