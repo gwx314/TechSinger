@@ -209,9 +209,7 @@ class techinfer(BaseTTSInfer):
         spker_set = json.load(open(f"{hparams['processed_data_dir']}/spker_set.json", 'r'))
         item_name = "Chinese#ZH-Alto-1#Mixed_Voice_and_Falsetto#十年#Mixed_Voice_Group#0000"
         # item_name = 'English#EN-Alto-1#Breathy#all is found#Breathy_Group#0000'
-        inp = {
-                'gen': item_name
-        }
+        inp = {'gen': item_name}
         
         for item in items_list:
             if inp['gen'] in item['item_name']:

@@ -9,6 +9,7 @@ We provide our implementation in this repository.
 Visit our [demo page](https://tech-singer.github.io) for audio samples.
 
 ## News
+- 2024.12: We released the checkpoints of TechSinger!
 - 2025.2: We released the code of TechSinger!
 - 2024.12: TechSinger is accepted by AAAI 2025!
 
@@ -17,16 +18,17 @@ We provide an example of how you can generate high-fidelity samples using TechSi
 
 To try on your own dataset or GTSinger, simply clone this repo in your local machine provided with NVIDIA GPU + CUDA cuDNN and follow the below instructions.
 
-### Models
+### Pre-trained Models
+Simply download the models from [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-blue)](https://huggingface.co/verstar/TechSinger/tree/main).
 Details of each folder are as follows:
 
 | Model       |  Description                                                              | 
 |-------------|--------------------------------------------------------------------------|
-| Stage1 |  Stage1 model [(config)](./egs/stage1.yaml) |
-| Stage2 |  Stage2 model [(config)](./egs/stage2.yaml) |
-| HIFI-GAN    |  Neural Vocoder                        |
+| stage1 |  stage1 model [(config)](./egs/stage1.yaml) |
+| stage2 |  stage2 model [(config)](./egs/stage2.yaml) |
+| HIFI-GAN    |  Neural Vocoder                       |
 
-**We will provide pretrain models in the near future.**
+**Notably, this TechSinger checkpoint only supports Chinese and English! You should train your own model based on GTSinger for multilingual style transfer and control! We will provide more checkpoints for different languages later.**
 
 ### Dependencies
 
@@ -44,6 +46,28 @@ pip install -r requirements.txt
 
 By default, this implementation uses as many GPUs in parallel as returned by `torch.cuda.device_count()`. 
 You can specify which GPUs to use by setting the `CUDA_DEVICES_AVAILABLE` environment variable before running the training module.
+
+## Inference for singing voices
+
+Here we provide a singing synthesis pipeline using TechSinger.
+
+1. Prepare **stage1, stage2**: Download and put checkpoint at `checkpoints/stage1`, `checkpoints/stage2`.
+2. Prepare **HIFI-GAN**: Download and put checkpoint at `checkpoints/hifigan`.
+3. Prepare **Information**: Provide singer id and input target ph, target note for each ph, target note_dur for each ph, target note_type for each ph (rest: 1, lyric: 2, slur: 3), and target technique for each ph (control: 0, technique: 1, random: 2). Input these information in `Inference/techsinger.py`. **Notably, if you want to use data in GTSinger to infer this checkpoint, refer to [phone_set](./ZHEN_checkpoint_phone_set.json), you have to delete _zh or _en in each ph of GTSinger!**
+4. Infer with techsinger:
+
+```bash
+export PYTHONPATH=.
+CUDA_VISIBLE_DEVICES=$GPU python inference/techsinger.py --config egs/stage2.yaml  --exp_name stage2 --reset
+```
+
+5. You can also use cfg_scale to adjust the degree of the technique. The larger the scale value is, the stronger the degree of the technique will be. The default value is 1.0:
+
+```bash
+CUDA_VISIBLE_DEVICES=$GPU python inference/techsinger.py --config egs/stage2.yaml  --exp_name stage2 --hparams="cfg_scale=2.0"  --reset
+```
+
+Generated wav files are saved in `infer_out` by default.<br>
 
 ## Train your own model based on GTSinger
 
@@ -75,28 +99,6 @@ CUDA_VISIBLE_DEVICES=$GPU python tasks/run.py --config egs/stage2.yaml  --exp_na
 ```bash
 CUDA_VISIBLE_DEVICES=$GPU python tasks/run.py --config egs/stage2.yaml  --exp_name Stage2 --infer
 ```
-
-## Inference for singing voices
-
-Here we provide a singing synthesis pipeline using TechSinger.
-
-1. Prepare **Stage1, Stage2**: Download and put checkpoint at `checkpoints/Stage1`, `checkpoints/Stage2`.
-2. Prepare **HIFI-GAN**: Download and put checkpoint at `checkpoints/hifigan`.
-3. Prepare **Information**: Provide singer id and input target ph, target note for each ph, target note_dur for each ph, target note_type for each ph (rest: 1, lyric: 2, slur: 3), and target technique for each ph (control: 0, technique: 1, random: 2). Input these information in `Inference/techsinger.py`. **Notably, if you want to use data in GTSinger to infer this checkpoint, refer to [phone_set](./ZHEN_checkpoint_phone_set.json), you have to delete _zh or _en in each ph of GTSinger!**
-4. Infer with techsinger:
-
-```bash
-export PYTHONPATH=.
-CUDA_VISIBLE_DEVICES=$GPU python inference/techsinger.py --config egs/stage2.yaml  --exp_name stage2 --reset
-```
-
-5. You can also use cfg_scale to adjust the degree of the technique. The larger the scale value is, the stronger the degree of the technique will be. The default value is 1.0:
-
-```bash
-CUDA_VISIBLE_DEVICES=$GPU python inference/techsinger.py --config egs/stage2.yaml  --exp_name stage2 --hparams="cfg_scale=2.0"  --reset
-```
-
-Generated wav files are saved in `infer_out` by default.<br>
 
 ## Acknowledgements
 
