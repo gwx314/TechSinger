@@ -198,6 +198,7 @@ class techinfer(BaseTTSInfer):
             'mix': ['1'],
             'falsetto': ['2'],
             'breathy': ['3'],
+            'pharyngeal': ['4'],
             'vibrato': ['5'],
             'glissando': ['6'],
             'bubble': ['7'],
