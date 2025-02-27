@@ -9,7 +9,7 @@ We provide our implementation in this repository.
 Visit our [demo page](https://tech-singer.github.io) for audio samples.
 
 ## News
-- 2024.12: We released the checkpoints of TechSinger!
+- 2025.2: We released the checkpoints of TechSinger!
 - 2025.2: We released the code of TechSinger!
 - 2024.12: TechSinger is accepted by AAAI 2025!
 
