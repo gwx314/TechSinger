@@ -4,6 +4,8 @@
 
 PyTorch Implementation of TechSinger (AAAI 2025): Technique Controllable Multilingual Singing Voice Synthesis via Flow Matching.
 
+[![arXiv](https://img.shields.io/badge/arXiv-Paper-<COLOR>.svg)](https://arxiv.org/pdf/2502.12572)
+
 We provide our implementation in this repository.
 
 Visit our [demo page](https://tech-singer.github.io) for audio samples.
