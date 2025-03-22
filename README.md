@@ -106,7 +106,8 @@ CUDA_VISIBLE_DEVICES=$GPU python tasks/run.py --config egs/stage2.yaml  --exp_na
 
 This implementation uses parts of the code from the following Github repos:
 [NATSpeech](https://github.com/NATSpeech/NATSpeech),
-[TCSinger](https://github.com/AaronZ345/TCSinger)
+[TCSinger](https://github.com/AaronZ345/TCSinger),
+[GTSinger](https://github.com/AaronZ345/GTSinger)
 as described in our code.
 
 ## Citations ##
