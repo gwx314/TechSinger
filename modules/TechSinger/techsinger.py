@@ -90,7 +90,7 @@ class TechEncoder(nn.Module):
         vibrato = self.vibrato_emb(vibrato) * math.sqrt(self.hidden_channels)
         glissando = self.glissando_emb(glissando) * math.sqrt(self.hidden_channels)
 
-        x=mix+falsetto+breathy+bubble+strong+weak+pharyngeal+vibrato+glissando
+        x=(mix+falsetto+breathy+bubble+strong+weak+pharyngeal+vibrato+glissando)/9
 
         return x
 
