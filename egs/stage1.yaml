@@ -31,7 +31,7 @@ f0_max: 1000
 f0_min: 50
 
 # speaker params
-num_spk: 160
+num_spk: 45
 use_spk_id: true
 use_spk_embed: false
 use_spk_prompt: false
@@ -67,7 +67,7 @@ optimizer_adam_beta2: 0.98
 timesteps: 1000
 K_step: 100
 max_beta: 0.06
-drop_tech_prob: 0.1
+drop_tech_prob: 0.2
 
 # Dur level
 dur_level: ph
