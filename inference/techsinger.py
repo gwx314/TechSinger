@@ -3,14 +3,11 @@ import numpy as np
 import torch
 from inference.tts.base_tts_infer import BaseTTSInfer
 from utils.commons.ckpt_utils import load_ckpt
-from utils.commons.hparams import hparams
 from utils.text.text_encoder import build_token_encoder
-from modules.TCSinger.tcsinger import SADecoder
-from modules.TCSinger.sdlm import SDLM
 from tasks.tts.vocoder_infer.base_vocoder import get_vocoder_cls
 from utils.audio import librosa_wav2spec
 from utils.commons.hparams import set_hparams
-from utils.commons.hparams import hparams as hp
+from utils.commons.hparams import hparams
 from utils.audio.io import save_wav
 import json
 from modules.TechSinger.techsinger import RFSinger, RFPostnet
@@ -67,7 +64,6 @@ class techinfer(BaseTTSInfer):
         bubble,strong,weak = sample['bubble'],sample['strong'],sample['weak']
         f0 = uv = None
         output = {}
-        
         # Run model
         with torch.no_grad():
             umix, ufalsetto, ubreathy = torch.ones_like(mix, dtype=mix.dtype) * 2, torch.ones_like(falsetto, dtype=falsetto.dtype) * 2, torch.ones_like(breathy, dtype=breathy.dtype) * 2
@@ -145,7 +141,6 @@ class techinfer(BaseTTSInfer):
                 'pharyngeal_tech':pharyngeal , 'vibrato_tech':vibrato,'glissando_tech':glissando,
                 'bubble_tech':bubble , 'strong_tech':strong,'weak_tech':weak
                 }
-        
         item['ph_len'] = len(item['ph_token'])
         return item
 
@@ -192,13 +187,12 @@ class techinfer(BaseTTSInfer):
     @classmethod
     def example_run(cls):
         set_hparams()
-        exp_name = hparams['exp_name'].split('/')[-1]
+        exp_name = hparams['exp_name'].split('/')[-1]        
         tech2id ={
             'control': ['0'],
             'mix': ['1'],
             'falsetto': ['2'],
             'breathy': ['3'],
-            'pharyngeal': ['4'],
             'vibrato': ['5'],
             'glissando': ['6'],
             'bubble': ['7'],
@@ -207,11 +201,15 @@ class techinfer(BaseTTSInfer):
         }
         infer_ins = cls(hparams)
         items_list = json.load(open(f"{hparams['processed_data_dir']}/metadata.json"))
-        spker_set = json.load(open(f"{hparams['processed_data_dir']}/spker_set.json", 'r'))
+        if os.path.exists(f"{hparams['processed_data_dir']}/spker_set.json"):
+            spker_set = json.load(open(f"{hparams['processed_data_dir']}/spker_set.json", 'r'))
+        else:
+            spker_set = {"ZH-Alto-1": 33, "ZH-Tenor-1": 34, "EN-Alto-1": 35, "EN-Alto-2": 36, "EN-Tenor-1": 37}
         item_name = "Chinese#ZH-Alto-1#Mixed_Voice_and_Falsetto#十年#Mixed_Voice_Group#0000"
-        # item_name = 'English#EN-Alto-1#Breathy#all is found#Breathy_Group#0000'
-        inp = {'gen': item_name}
-        
+        item_name = 'English#EN-Alto-1#Breathy#all is found#Breathy_Group#0000'
+        inp = {
+                'gen': item_name
+        }
         for item in items_list:
             if inp['gen'] in item['item_name']:
                 inp['text_gen']=item['ph']
@@ -230,6 +228,6 @@ class techinfer(BaseTTSInfer):
             wav_out, mel_out = out
             save_wav(wav_out, wav_fn, hparams['audio_sample_rate'])
             print(f'enjoy {wav_fn}')
-
+        
 if __name__ == '__main__':
     techinfer.example_run()
