@@ -8,7 +8,7 @@ PyTorch Implementation of TechSinger (AAAI 2025): Technique Controllable Multili
 
 We provide our implementation in this repository.
 
-Visit our [demo page](https://tech-singer.github.io) for audio samples.
+Visit our [demo page](https://gwx314.github.io/tech-singer/) for audio samples.
 
 ## News
 - 2025.2: We released the checkpoints of TechSinger!
