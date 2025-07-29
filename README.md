@@ -30,7 +30,7 @@ Details of each folder are as follows:
 | stage2 |  stage2 model [(config)](./egs/stage2.yaml) |
 | HIFI-GAN    |  Neural Vocoder                       |
 
-**Notably, this TechSinger checkpoint only supports Chinese and English! You should train your own model based on GTSinger for multilingual style transfer and control! We will provide more checkpoints for different languages later.**
+**Notably, this TechSinger checkpoint only supports Chinese and English! You should train your own model based on GTSinger for multilingual style transfer and control!**
 
 ### Dependencies
 
