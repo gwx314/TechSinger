@@ -55,7 +55,7 @@ Here we provide a singing synthesis pipeline using TechSinger.
 
 1. Prepare **stage1, stage2**: Download and put checkpoint at `checkpoints/stage1`, `checkpoints/stage2`.
 2. Prepare **HIFI-GAN**: Download and put checkpoint at `checkpoints/hifigan`.
-3. Prepare **Information**: Provide singer id and input target ph, target note for each ph, target note_dur for each ph, target note_type for each ph (rest: 1, lyric: 2, slur: 3), and target technique for each ph (control: 0, technique: 1, random: 2). Input these information in `Inference/techsinger.py`. **Notably, if you want to use data in GTSinger to infer this checkpoint, refer to [phone_set](./ZHEN_checkpoint_phone_set.json), you have to delete _zh or _en in each ph of GTSinger!**
+3. Prepare **Information**: Provide singer id and input target ph, target note for each ph, target note_dur for each ph, target note_type for each ph (rest: 1, lyric: 2, slur: 3), and target technique for each ph (control: 0, technique: 1, random: 2). Input these information in `Inference/techsinger.py`. **Notably, if you want to use data from GTSinger to infer this checkpoint, you need to modify the phonemes in metadata.json of GTSinger (delete "_zh" or "_en" from each phoneme) to ensure that all phonemes are included in [phone_set](./ZHEN_checkpoint_phone_set.json)!**
 4. Infer with techsinger:
 
 ```bash
