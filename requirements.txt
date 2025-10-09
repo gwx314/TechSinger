@@ -23,4 +23,4 @@ textgrid==1.6.1
 tqdm==4.66.5
 webrtcvad==2.0.10
 scikit-image==0.25.1
-torchtyn==1.0.6
+torchdyn==1.0.6
