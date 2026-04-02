@@ -22,6 +22,9 @@ To try on your own dataset or GTSinger, simply clone this repo in your local mac
 
 ### Pre-trained Models
 Simply download the models from [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-blue)](https://huggingface.co/verstar/TechSinger/tree/main).
+Download the models from [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-blue)]([https://huggingface.co/verstar/TechSinger/tree/main](https://huggingface.co/AaronZ345/TCSinger/tree/main/checkpoints/hifigan
+)).
+
 Details of each folder are as follows:
 
 | Model       |  Description                                                              | 
